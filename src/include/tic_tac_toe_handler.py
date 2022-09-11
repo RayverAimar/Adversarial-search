@@ -30,18 +30,14 @@ class TicTacToeHandler(object):
         return rows + columns + [first_diagonal, second_diagonal]
 
     def is_valid_move(self, move : Move):
-        """
-        Return True if move is valid, and False otherwise.
-        """
+        
         row, col = move.row, move.col
         move_was_not_played = self._current_moves[row][col].label == ""
         no_winner = not self._has_winner
         return no_winner and move_was_not_played
 
     def process_move(self, move : Move):
-        """
-        Process the current move and check if it's a win.
-        """
+        
         row, col = move.row, move.col
         self._current_moves[row][col] = move
         for combo in self._winning_combos:
