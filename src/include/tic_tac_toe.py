@@ -1,7 +1,9 @@
+import random
 import tkinter as tk
 from tkinter import font
 from include.tic_tac_toe_handler import TicTacToeHandler
 from include.utils import Move
+
 
 class TicTacToe(tk.Tk):
     def __init__(self, game : TicTacToeHandler):
@@ -72,6 +74,47 @@ class TicTacToe(tk.Tk):
                 self._game.toggle_player()
                 msg = f"{self._game.current_player.label}'s turn"
                 self._update_display(msg)
+                self.computer_move()
+
+
+    def computer_move(self):
+        grid_frame = tk.Frame(master=self)
+        grid_frame.pack()
+        upper_value = (self._game.board_size * self._game.board_size) - 1
+        
+        while True:
+            position = random.randint(0, upper_value)
+            row = position // self._game.board_size
+            col = position % self._game.board_size
+            print("Current position is: {}, row : {} col: {}".format(position, position // self._game.board_size, position % self._game.board_size))
+            move = Move(row, col, self._game.current_player.label)
+            if self._game.is_valid_move(move):
+                break
+        
+        print()
+
+        computer_button : tk.Button
+
+        for key in self._cells.keys():
+            values = self._cells[key]
+            if(values[0] == row and values[1] == col):
+                computer_button = key
+        
+        computer_button.invoke()
+        self._update_button(computer_button)
+        self._game.process_move(move)
+
+        if self._game.is_tied():
+                self._update_display(msg="Tied game!", color="red")
+        elif self._game.has_winner():
+            self._highlight_cells()
+            msg = f'Player "{self._game.current_player.label}" won!'
+            color = self._game.current_player.color
+            self._update_display(msg, color)
+        else:
+            self._game.toggle_player()
+            msg = f"{self._game.current_player.label}'s turn"
+            self._update_display(msg)
 
     def _update_button(self, clicked_btn):
         clicked_btn.config(text=self._game.current_player.label)
@@ -89,6 +132,7 @@ class TicTacToe(tk.Tk):
     def reset_board(self):
         
         self._game.reset_game()
+        print("----------------------------------------")
         self._update_display(msg="Ready?")
         for button in self._cells.keys():
             button.config(highlightbackground="lightblue")
