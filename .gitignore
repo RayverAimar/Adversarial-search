@@ -36,4 +36,5 @@
 
 # Folders
 
+.__pycache__
 .vscode
