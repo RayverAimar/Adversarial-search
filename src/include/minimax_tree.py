@@ -10,6 +10,7 @@ class Node(object):
         self.children = []
         self.board = board
         self.depth = depth
+        self.max_depth = max_depth
         self.avatar = avatar
         self.moves_played = moves_played
         self.move : tuple
@@ -18,11 +19,14 @@ class Node(object):
         self.winning_combo = self._get_actual_combos()
         self.max_moves_played = len(self.board)*len(self.board)
 
+        self.is_leaf = self.winning_combo or (self.moves_played == self.max_moves_played) or self.depth == self.max_depth
+
         #See if the board has already a winning combo, then return its value and the position of its best child
 
-        if (depth < max_depth) and (self.moves_played < self.max_moves_played ) and (not self.winning_combo):
+        if (not self.is_leaf):
             self.spread()
-
+        else:
+            self.value = self.get_node_value()
         #See the child with most-least value and return its moved position
         
 
@@ -36,8 +40,10 @@ class Node(object):
                 return value
             else:
                 return value * -1
-    
+        else:
         ##Aritmetica combos player - combos computer
+            value = self.arimetica()
+        return value
         
 
     def _get_winning_combos(self):
@@ -50,17 +56,28 @@ class Node(object):
         second_diagonal = [col[j] for j, col in enumerate(reversed(columns))]
         return rows + columns + [first_diagonal, second_diagonal]
         
-    def _get_actual_combos(self):
+    def _get_actual_combos(self, avatar):
         combos = 0
         for combo in self._winning_combos:
             results = set(self.board[n][m] for n, m in combo)
-            is_win = (len(results) == 1) and ("" not in results) and (self.avatar in results)
-            if is_win:
+            is_win = (len(results) == 1) and (' ' in results)
+            is_win2 = (len(results) == 2) and (' ' in results) and (avatar in results)
+            #print(results, " " , is_win, " ", is_win2);
+            if is_win or is_win2:
                 combos+=1
-
         return combos
-    
-    
+
+    def arimetica(self):
+        _winning_combos  = self._get_winning_combos(self.board)
+        computer_options = self._get_actual_combos(_winning_combos, self.avatar)
+        human_avatar:str
+        if avatars[0] != self.avatar:
+            human_avatar = avatars[0]
+        else:
+            human_avatar = avatars[1]
+        human_options    = self._get_actual_combos(_winning_combos, human_avatar) 
+        print(computer_options, "-", human_options)
+        return computer_options - human_options
 
     def spread(self):
         for row in range(len(self.board)):

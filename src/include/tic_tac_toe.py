@@ -76,11 +76,11 @@ class TicTacToe(tk.Tk):
                 self._update_display(msg)
                 self.computer_move()
 
-
     def computer_move(self):
         grid_frame = tk.Frame(master=self)
         grid_frame.pack()
         upper_value = (self._game.board_size * self._game.board_size) - 1
+        
         
         while True:
             position = random.randint(0, upper_value)
@@ -91,9 +91,86 @@ class TicTacToe(tk.Tk):
             if self._game.is_valid_move(move):
                 break
         
+        newBoard = []
+        for i in range(self._game.board_size):
+            row = []
+            for j in range(self._game.board_size):
+                row.append(' ')
+            newBoard.append(row)
+        
+        for row in self._game._current_moves:
+            for move in row:
+                newBoard[move.row][move.col] = move.label
+        
+        print(newBoard)
+
+
+
+
+
         print()
 
         computer_button : tk.Button
+
+    def computer_move(self):
+        grid_frame = tk.Frame(master=self)
+        grid_frame.pack()
+        upper_value = (self._game.board_size * self._game.board_size) - 1
+        
+        
+        while True:
+            position = random.randint(0, upper_value)
+            row = position // self._game.board_size
+            col = position % self._game.board_size
+            print("Current position is: {}, row : {} col: {}".format(position, position // self._game.board_size, position % self._game.board_size))
+            move = Move(row, col, self._game.current_player.label)
+            if self._game.is_valid_move(move):
+                break
+        
+        newBoard = []
+        
+        for i in range(self._game.board_size):
+            row = []
+            for j in range(self._game.board_size):
+                row.append(' ')
+            newBoard.append(row)
+
+        
+        for row in self._game._current_moves:
+            for move in row:
+                
+                newBoard[move.row][move.col] = move.label
+        
+        print(newBoard)
+
+
+
+
+
+        print()
+
+        computer_button : tk.Button
+
+        for key in self._cells.keys():
+            values = self._cells[key]
+            if(values[0] == row and values[1] == col):
+                computer_button = key
+        
+        computer_button.invoke()
+        self._update_button(computer_button)
+        self._game.process_move(move)
+
+        if self._game.is_tied():
+                self._update_display(msg="Tied game!", color="red")
+        elif self._game.has_winner():
+            self._highlight_cells()
+            msg = f'Player "{self._game.current_player.label}" won!'
+            color = self._game.current_player.color
+            self._update_display(msg, color)
+        else:
+            self._game.toggle_player()
+            msg = f"{self._game.current_player.label}'s turn"
+            self._update_display(msg)
 
         for key in self._cells.keys():
             values = self._cells[key]
