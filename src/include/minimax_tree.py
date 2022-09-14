@@ -1,5 +1,3 @@
-
-#from include.utils import Move
 import copy
 
 avatars = []
@@ -97,9 +95,6 @@ class Node(object):
         human_avatar = avatars[1]
         computer_options = self._get_possible_combos(computer_avatar)
         human_options    = self._get_possible_combos(human_avatar)
-        print("Current depth = ", self.depth)
-        print(computer_options, "-", human_options, "=", computer_options - human_options)
-        print(self.board)
         return computer_options - human_options
 
     def get_value(self):
@@ -111,8 +106,6 @@ class Node(object):
 
         return self.combos_substraction()
         
-
-
 class MinimaxTree(object):
     def __init__(self, board, avatar, max_depth):
         self.board = board
@@ -128,20 +121,4 @@ class MinimaxTree(object):
             avatars.append("X")
         
         self.root = Node(self.board, self.max_depth, self.avatar)
-
-        hola = "holu"
-
-
-def main():
-    
-    board = [["O","O",""],["X", "X", ""],["X", "O", "X"]]
-
-    minimax = MinimaxTree(board, "O", 4)
-
-    position = minimax.root.children[minimax.root.idx_best_child].move_to_get_here
-
-    print(position)
-
-
-
-main()
+        print(self.root.children[self.root.idx_best_child].move_to_get_here)
