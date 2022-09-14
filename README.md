@@ -40,7 +40,7 @@ Once you configure the environment, depending on who starts, you'll be able to p
 #### Depth(1) Board(3x3) Starts(Human)
 
 
-### Depth(6) Board(3x3) Starts(Human)
+#### Depth(6) Board(3x3) Starts(Human)
 
 
 ---
