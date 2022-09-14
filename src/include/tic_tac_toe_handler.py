@@ -2,7 +2,8 @@ from include.utils import *
 from itertools import cycle
 
 class TicTacToeHandler(object):
-    def __init__(self, players = DEFAULT_PLAYERS, board_size = BOARD_SIZE):
+    def __init__(self, max_depth,  players = DEFAULT_PLAYERS, board_size = BOARD_SIZE):
+        self._max_depth = max_depth
         self._players = cycle(players)
         self.board_size = board_size
         self.current_player = next(self._players)
