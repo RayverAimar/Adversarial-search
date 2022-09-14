@@ -88,7 +88,7 @@ class TicTacToe(tk.Tk):
             for moves in i:
                 current_board[moves.row][moves.col] = moves.label
 
-        minimax = MinimaxTree(current_board, self._game.current_player.label, 3)
+        minimax = MinimaxTree(current_board, self._game.current_player.label, self._game._max_depth)
 
         row , col = minimax.root.children[minimax.root.idx_best_child].move_to_get_here
         move = Move(row, col, self._game.current_player.label)

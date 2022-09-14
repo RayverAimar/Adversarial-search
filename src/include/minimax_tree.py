@@ -98,12 +98,6 @@ class Node(object):
         return computer_options - human_options
 
     def get_value(self):
-        if self.is_winner:
-            score = self.max_possible_moves + (self.max_possible_moves - self.moves_played)
-            if self.avatar == avatars[0]:
-                score *= -1
-            return score
-
         return self.combos_substraction()
         
 class MinimaxTree(object):
@@ -121,4 +115,4 @@ class MinimaxTree(object):
             avatars.append("X")
         
         self.root = Node(self.board, self.max_depth, self.avatar)
-        print(self.root.children[self.root.idx_best_child].move_to_get_here)
+        print("Best move: ", self.root.children[self.root.idx_best_child].move_to_get_here)
