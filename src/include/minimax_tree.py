@@ -1,124 +1,147 @@
 
-from multiprocessing.sharedctypes import Value
-from include.utils import Move
+#from include.utils import Move
+import copy
 
 avatars = []
 
 class Node(object):
 
-    def __init__(self, board : list, avatar, max_depth, moves_played, depth = 0):
-        self.children = []
+    def __init__(self, board, max_depth, avatar, move_to_get_here = None, depth = 0):
         self.board = board
-        self.depth = depth
         self.max_depth = max_depth
         self.avatar = avatar
-        self.moves_played = moves_played
-        self.move : tuple
+        self.move_to_get_here = move_to_get_here
+        self.depth = depth
+        self.children = []
         self.value : int
-        self._winning_combos = self._get_winning_combos()
-        self.winning_combo = self._get_actual_combos()
-        self.max_moves_played = len(self.board)*len(self.board)
+        self.idx_best_child : int
 
-        self.is_leaf = self.winning_combo or (self.moves_played == self.max_moves_played) or self.depth == self.max_depth
-
-        #See if the board has already a winning combo, then return its value and the position of its best child
-
-        if (not self.is_leaf):
+        if not self.is_leaf:
             self.spread()
-        else:
-            self.value = self.get_node_value()
-        #See the child with most-least value and return its moved position
-        
-
-
-    def get_node_value(self):
-        value : int
-
-        if(self.winning_combo):
-            value = self.max_moves_played + (self.max_moves_played - self.moves_played)
-            if self.depth % 2:
-                return value
+            if (self.depth % 2) == 0:
+                self.value = -99
+                for i in range(len(self.children)):
+                    if self.children[i].value > self.value:
+                        self.value = self.children[i].value
+                        self.idx_best_child = i
             else:
-                return value * -1
-        else:
-        ##Aritmetica combos player - combos computer
-            value = self.arimetica()
-        return value
-        
+                self.value = 99
+                for i in range(len(self.children)):
+                    if self.children[i].value < self.value:
+                        self.value = self.children[i].value
+                        self.idx_best_child = i    
 
-    def _get_winning_combos(self):
+        else:
+            self.value = self.get_value()
+    
+    @property
+    def _winning_combos(self):
         rows = [
-            [(row, col) for col in len(self.board)]
-            for row in len(self.board)
+            [(row, col) for col in range(len(self.board))]
+            for row in range(len(self.board))
         ]
         columns = [list(col) for col in zip(*rows)]
         first_diagonal = [row[i] for i, row in enumerate(rows)]
         second_diagonal = [col[j] for j, col in enumerate(reversed(columns))]
         return rows + columns + [first_diagonal, second_diagonal]
-        
-    def _get_actual_combos(self, avatar):
+    
+    @property
+    def moves_played(self):
+        counter = 0
+        for i in range(len(self.board)):
+            for j in range(len(self.board)):
+                if self.board[i][j] != "":
+                    counter += 1
+        return counter
+
+    @property
+    def max_possible_moves(self):
+        return len(self.board) * len(self.board)
+
+    @property
+    def is_winner(self):
+        for combo in self._winning_combos:
+            results = set(self.board[n][m] for n, m in combo)
+            is_win = (len(results) == 1) and ("" not in results)
+            if is_win:
+                return True
+
+    @property
+    def is_leaf(self):
+        if self.moves_played >= self.max_possible_moves or self.depth >= self.max_depth or self.is_winner:
+            return True
+        return False
+
+    def spread(self):
+        for i in range(len(self.board)):
+            for j in range(len(self.board)):
+                if self.board[i][j] == "":
+                    copy_board = copy.deepcopy(self.board)
+                    copy_board[i][j] = self.avatar
+                    prox_move = (i,j)
+                    child = Node(copy_board, self.max_depth, avatars[(self.depth + 1) % 2], prox_move, self.depth + 1)
+                    self.children.append(child)
+    
+    def _get_possible_combos(self, avatar):
         combos = 0
         for combo in self._winning_combos:
             results = set(self.board[n][m] for n, m in combo)
-            is_win = (len(results) == 1) and (' ' in results)
-            is_win2 = (len(results) == 2) and (' ' in results) and (avatar in results)
-            #print(results, " " , is_win, " ", is_win2);
+            is_win = (len(results) == 1) and ("" in results)
+            is_win2 = (len(results) == 2) and ("" in results) and (avatar in results)
             if is_win or is_win2:
                 combos+=1
         return combos
 
-    def arimetica(self):
-        _winning_combos  = self._get_winning_combos(self.board)
-        computer_options = self._get_actual_combos(_winning_combos, self.avatar)
-        human_avatar:str
-        if avatars[0] != self.avatar:
-            human_avatar = avatars[0]
-        else:
-            human_avatar = avatars[1]
-        human_options    = self._get_actual_combos(_winning_combos, human_avatar) 
-        print(computer_options, "-", human_options)
+    def combos_substraction(self):
+        computer_avatar = avatars[0]
+        human_avatar = avatars[1]
+        computer_options = self._get_possible_combos(computer_avatar)
+        human_options    = self._get_possible_combos(human_avatar)
+        print("Current depth = ", self.depth)
+        print(computer_options, "-", human_options, "=", computer_options - human_options)
+        print(self.board)
         return computer_options - human_options
 
-    def spread(self):
-        for row in range(len(self.board)):
-            for col in range(len(self.board)):
-                if self.board[row][col] == "":
-                    copy_board = self.board.copy()
-                    copy_board[row][col] = self.avatar
-                    self.move = (row, col)
-                    child = Node(copy_board, avatars[(self.depth+1)%2], depth=self.depth+1)
-                    self.children.append(child)
-    
-    def draw(self):
-        for rows in self.board:
-            for cols in rows:
-                print(cols, end = " ")
-            print()
+    def get_value(self):
+        if self.is_winner:
+            score = self.max_possible_moves + (self.max_possible_moves - self.moves_played)
+            if self.avatar == avatars[0]:
+                score *= -1
+            return score
+
+        return self.combos_substraction()
+        
+
 
 class MinimaxTree(object):
-
-    def __init__(self, board : list, avatar, max_depth):
+    def __init__(self, board, avatar, max_depth):
+        self.board = board
         self.avatar = avatar
         self.max_depth = max_depth
-        self.board = board
+
         avatars.clear()
         avatars.append(self.avatar)
+
         if self.avatar == "X":
             avatars.append("O")
         else:
             avatars.append("X")
         
-        self.moves_played = self.get_moves_played()
-        
+        self.root = Node(self.board, self.max_depth, self.avatar)
 
-        self.root = Node(self.board, avatar, self.moves_played ,max_depth)
+        hola = "holu"
 
-    def get_moves_played(self):
-        moves_played = 0
-        for rows in self.board:
-            for cols in rows:
-                if cols != "":
-                    moves_played += 1
-        return moves_played
 
+def main():
     
+    board = [["O","O",""],["X", "X", ""],["X", "O", "X"]]
+
+    minimax = MinimaxTree(board, "O", 4)
+
+    position = minimax.root.children[minimax.root.idx_best_child].move_to_get_here
+
+    print(position)
+
+
+
+main()
