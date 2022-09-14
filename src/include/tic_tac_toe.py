@@ -1,19 +1,22 @@
-import random
 import tkinter as tk
 from tkinter import font
+from include.minimax_tree import MinimaxTree
 from include.tic_tac_toe_handler import TicTacToeHandler
 from include.utils import Move
 
 
 class TicTacToe(tk.Tk):
-    def __init__(self, game : TicTacToeHandler):
+    def __init__(self, game : TicTacToeHandler, _computer_first = False):
         super().__init__()
         self.title("Tic-Tac-Toe Game")
         self._cells = {}
         self._game = game
+        self._computer_first = _computer_first
         self._create_menu()
         self._create_board_display()
         self._create_board_grid()
+        if self._computer_first:
+            self.computer_move()
 
     def _create_menu(self):
         menu_bar = tk.Menu(master=self)
@@ -24,7 +27,6 @@ class TicTacToe(tk.Tk):
         file_menu.add_command(label="Exit", command=quit)
         menu_bar.add_cascade(label="File", menu=file_menu)
 
-    #Tkinter stuff
     def _create_board_display(self):
         display_frame = tk.Frame(master=self)
         display_frame.pack(fill=tk.X)
@@ -47,8 +49,8 @@ class TicTacToe(tk.Tk):
                     text="",
                     font=font.Font(size=36, weight="bold"),
                     fg="black",
-                    width=3,
-                    height=2,
+                    width=2,
+                    height=1,
                     highlightbackground="lightblue",
                 )
                 self._cells[button] = (row, col)
@@ -67,47 +69,29 @@ class TicTacToe(tk.Tk):
                 self._update_display(msg="Tied game!", color="red")
             elif self._game.has_winner():
                 self._highlight_cells()
-                msg = f'Player "{self._game.current_player.label}" won!'
+                msg = f'Human won!'
                 color = self._game.current_player.color
                 self._update_display(msg, color)
             else:
                 self._game.toggle_player()
-                msg = f"{self._game.current_player.label}'s turn"
+                msg = f"Computer's turn"
                 self._update_display(msg)
                 self.computer_move()
     
     def computer_move(self):
         grid_frame = tk.Frame(master=self)
         grid_frame.pack()
-        upper_value = (self._game.board_size * self._game.board_size) - 1
 
-        while True:
-            position = random.randint(0, upper_value)
-            row = position // self._game.board_size
-            col = position % self._game.board_size
-            print("Current position is: {}, row : {} col: {}".format(position, position // self._game.board_size, position % self._game.board_size))
-            move = Move(row, col, self._game.current_player.label)
-            if self._game.is_valid_move(move):
-                break
-
-        
-        newBoard = []
-        for i in range(self._game.board_size):
-            fila = []
-            for j in range(self._game.board_size):
-                fila.append(' ')
-            newBoard.append(fila)
+        current_board = [["" for j in range(self._game.board_size)] for i in range(self._game.board_size)]
         
         for i in self._game._current_moves:
-            for move in i:
-                newBoard[move.row][move.col] = move.label
-        
-        print(self._game._current_moves)
-        print(newBoard)
+            for moves in i:
+                current_board[moves.row][moves.col] = moves.label
 
+        minimax = MinimaxTree(current_board, self._game.current_player.label, 3)
 
-        print()
-
+        row , col = minimax.root.children[minimax.root.idx_best_child].move_to_get_here
+        move = Move(row, col, self._game.current_player.label)
         computer_button : tk.Button
 
         for key in self._cells.keys():
@@ -123,12 +107,12 @@ class TicTacToe(tk.Tk):
                 self._update_display(msg="Tied game!", color="red")
         elif self._game.has_winner():
             self._highlight_cells()
-            msg = f'Player "{self._game.current_player.label}" won!'
+            msg = f'Computer won!'
             color = self._game.current_player.color
             self._update_display(msg, color)
         else:
             self._game.toggle_player()
-            msg = f"{self._game.current_player.label}'s turn"
+            msg = f"Human's turn"
             self._update_display(msg)
 
 
@@ -146,7 +130,6 @@ class TicTacToe(tk.Tk):
                 button.config(highlightbackground="red")
 
     def reset_board(self):
-        
         self._game.reset_game()
         print("----------------------------------------")
         self._update_display(msg="Ready?")
@@ -154,5 +137,5 @@ class TicTacToe(tk.Tk):
             button.config(highlightbackground="lightblue")
             button.config(text="")
             button.config(fg="black")
-
-
+        if self._computer_first:
+            self.computer_move()
