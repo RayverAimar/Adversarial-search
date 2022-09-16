@@ -4,6 +4,17 @@ from include.dimension_getter import DimensionGetter
 from include.first_move_getter import FirstMoveGetter
 from include.depth_getter import DepthGetter
 
+def print_configuration(max_depth, computer_first, board_size):
+    first_movement = "Human"
+    if computer_first:
+        first_movement = "Computer"
+    print("\n-----------------------------------------")
+    print("| Current configuration is:\t\t|")
+    print("| \t* Max depth:\t", max_depth, "\t\t|")
+    print("| \t* Board size:\t", board_size, "\t\t|")
+    print("| \t*", first_movement, "goes first...\t|")
+    print("-----------------------------------------\n")
+
 def main():
        
     depth_getter = DepthGetter()
@@ -19,12 +30,11 @@ def main():
     computer_first = first_move_getter._pressed == 0
     board_size = dimension_getter._pressed
 
-    print(max_depth)
-    print(board_size)
-
     if board_size > 5:
-        max_depth = 2
+        max_depth = 1
     
+    print_configuration(max_depth=max_depth, computer_first=computer_first, board_size=board_size)
+
     handler = TicTacToeHandler(max_depth=max_depth, board_size=board_size)
     game = TicTacToe(handler, computer_first)
     game.mainloop()
