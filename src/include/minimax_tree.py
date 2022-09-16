@@ -1,6 +1,9 @@
 import copy
+import random
 
 avatars = []
+
+INF = 1e9
 
 class Node(object):
 
@@ -11,24 +14,31 @@ class Node(object):
         self.move_to_get_here = move_to_get_here
         self.depth = depth
         self.children = []
+        self.children_with_same_value = []
         self.value : int
         self.idx_best_child : int
 
         if not self.is_leaf:
             self.spread()
             if (self.depth % 2) == 0:
-                self.value = -99
+                self.value = -INF
                 for i in range(len(self.children)):
                     if self.children[i].value > self.value:
                         self.value = self.children[i].value
                         self.idx_best_child = i
             else:
-                self.value = 99
+                self.value = INF
                 for i in range(len(self.children)):
                     if self.children[i].value < self.value:
                         self.value = self.children[i].value
-                        self.idx_best_child = i    
-
+                        self.idx_best_child = i
+            if len(self.children) > 1:
+                children_with_same_value = []
+                for i in range(len(self.children)):
+                    if self.children[i].value == self.value:
+                        children_with_same_value.append(i)
+                idx_best_child = children_with_same_value[random.randint(0, len(children_with_same_value) - 1)]
+                self.idx_best_child = idx_best_child
         else:
             self.value = self.get_value()
     
@@ -98,7 +108,12 @@ class Node(object):
         return computer_options - human_options
 
     def get_value(self):
-        return self.combos_substraction()
+        if self.max_depth <= 3 or not self.is_winner:
+            return self.combos_substraction()
+        score = self.max_possible_moves + (self.max_possible_moves - self.moves_played)
+        if self.avatar == avatars[0]:
+            score *= -1
+        return score
         
 class MinimaxTree(object):
     def __init__(self, board, avatar, max_depth):
