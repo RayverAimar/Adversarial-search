@@ -47,7 +47,7 @@ Once you configure the environment, depending on who starts, you'll be able to p
 
 #### Depth(4) Board(3x3) Starts(Human)
 
-![Depth(4) and Board(3x3)](https://media.discordapp.net/attachments/781328016919887898/1020192396480368651/3x3-8.gif?width=375&height=455)
+![Depth(4) and Board(3x3)](https://media.discordapp.net/attachments/781328016919887898/1020192396480368651/3x3-8.gif)
 
 ---
 ### Contributors
