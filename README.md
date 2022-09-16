@@ -47,9 +47,12 @@ Once you configure the environment, depending on who starts, you'll be able to p
 
 #### Depth(4) Board(3x3) Starts(Human)
 
-![Depth(4) and Board(3x3)](https://media.discordapp.net/attachments/781328016919887898/1020192396480368651/3x3-8.gif)
+![Depth(4) and Board(3x3)](https://i.ibb.co/7g062XY/3x3-8.gif)
 
 ---
 ### Contributors
 - Chillitupa Quispihuanca, Alfred Addison
 - Muñoz Curi, Rayver Aimar
+<a href="https://github.com/RayverAimar/Adversarial-search/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=RayverAimar/Adversarial-search" />
+</a>
