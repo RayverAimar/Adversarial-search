@@ -1,43 +1,36 @@
-from include.tic_tac_toe import TicTacToe
-from include.tic_tac_toe_handler import TicTacToeHandler
-from include.dimension_getter import DimensionGetter
-from include.first_move_getter import FirstMoveGetter
-from include.depth_getter import DepthGetter
+"""Tk GUI entry point — loops between the config dialog and the game window."""
 
-def print_configuration(max_depth, computer_first, board_size):
-    first_movement = "Human"
-    if computer_first:
-        first_movement = "Computer"
-    print("\n-----------------------------------------")
-    print("| Current configuration is:\t\t|")
-    print("| \t* Max depth:\t", max_depth, "\t\t|")
-    print("| \t* Board size:\t", board_size, "\t\t|")
-    print("| \t*", first_movement, "goes first...\t|")
-    print("-----------------------------------------\n")
+import os
+import sys
 
-def main():
-       
-    depth_getter = DepthGetter()
-    depth_getter.mainloop()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    first_move_getter = FirstMoveGetter()
-    first_move_getter.mainloop()
+from include.config_dialog import ConfigDialog
+from include.tic_tac_toe import TicTacToeGame
 
-    dimension_getter = DimensionGetter()
-    dimension_getter.mainloop()
 
-    max_depth = depth_getter._pressed
-    computer_first = first_move_getter._pressed == 0
-    board_size = dimension_getter._pressed
+def run() -> None:
+    while True:
+        dialog = ConfigDialog()
+        dialog.mainloop()
+        config = dialog.result
+        if config is None:
+            return
 
-    if board_size > 5:
-        max_depth = 1
-    
-    print_configuration(max_depth=max_depth, computer_first=computer_first, board_size=board_size)
+        wants_new_config = {"value": False}
 
-    handler = TicTacToeHandler(max_depth=max_depth, board_size=board_size)
-    game = TicTacToe(handler, computer_first)
-    game.mainloop()
+        def on_new_game():
+            wants_new_config["value"] = True
+
+        def on_quit():
+            wants_new_config["value"] = False
+
+        game = TicTacToeGame(config, on_new_game=on_new_game, on_quit=on_quit)
+        game.mainloop()
+
+        if not wants_new_config["value"]:
+            return
+
 
 if __name__ == "__main__":
-    main()
+    run()

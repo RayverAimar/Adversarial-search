@@ -50,19 +50,77 @@ def empty_cells(board: list[list[str]]) -> list[tuple[int, int]]:
 
 
 def heuristic(board: list[list[str]], me: str, opp: str) -> int:
-    """Count of lines still winnable by ``me`` minus those winnable by ``opp``.
+    """Quadratic open-line heuristic.
 
-    A line is winnable by a player if it contains only that player's marks
-    and empty cells (no opposing marks).
+    For every winning line that no opponent mark blocks, the player gets
+    ``my_count ** 2``. A line with two of my marks is worth four times more
+    than a line with one — this is what tells the engine to advance toward
+    completing a line instead of spreading thin.
+
+    Symmetric for the opponent: lines with no marks of mine subtract
+    ``opp_count ** 2``. Mixed lines (both players present) score zero —
+    nobody can win on them.
+
+    Returning ``int`` so that arithmetic with ``INF - depth`` stays in ints.
     """
     score = 0
     for combo in winning_combos(len(board)):
-        cells = [board[r][c] for r, c in combo]
-        if opp not in cells:
-            score += 1
-        if me not in cells:
-            score -= 1
+        my_count = 0
+        opp_count = 0
+        for r, c in combo:
+            v = board[r][c]
+            if v == me:
+                my_count += 1
+            elif v == opp:
+                opp_count += 1
+        if opp_count == 0:
+            score += my_count * my_count
+        if my_count == 0:
+            score -= opp_count * opp_count
     return score
+
+
+def heuristic_breakdown(board: list[list[str]], me: str, opp: str) -> dict:
+    """Line-by-line decomposition of :func:`heuristic`.
+
+    Returns a dict with the totals (``me_score``, ``opp_score``, ``total``)
+    plus three buckets of lines: ``me_only`` (open for me), ``opp_only``
+    (open for opp), and ``dead`` (mixed, no contribution). Used by the
+    tree-viewer's inspection panel.
+    """
+    me_lines: list[tuple[tuple[tuple[int, int], ...], int]] = []
+    opp_lines: list[tuple[tuple[tuple[int, int], ...], int]] = []
+    dead_lines: list[tuple[tuple[int, int], ...]] = []
+
+    me_score = 0
+    opp_score = 0
+
+    for combo in winning_combos(len(board)):
+        my_count = 0
+        opp_count = 0
+        for r, c in combo:
+            v = board[r][c]
+            if v == me:
+                my_count += 1
+            elif v == opp:
+                opp_count += 1
+        if my_count and opp_count:
+            dead_lines.append(combo)
+        elif opp_count == 0:
+            me_lines.append((combo, my_count))
+            me_score += my_count * my_count
+        else:  # my_count == 0
+            opp_lines.append((combo, opp_count))
+            opp_score += opp_count * opp_count
+
+    return {
+        "me_score": me_score,
+        "opp_score": opp_score,
+        "total": me_score - opp_score,
+        "me_lines": me_lines,
+        "opp_lines": opp_lines,
+        "dead_lines": dead_lines,
+    }
 
 
 class Minimax:
@@ -78,9 +136,13 @@ class Minimax:
         self.opp = opp
         self.max_depth = max_depth
         self.nodes_visited = 0
+        # Populated by ``best_move``: the score assigned to every legal move
+        # at the root of the search. Consumed by the tree viewer.
+        self.candidates: list[tuple[tuple[int, int], int]] = []
 
     def best_move(self, board: list[list[str]]) -> tuple[int, int]:
         self.nodes_visited = 0
+        self.candidates = []
         best_score = -INF
         best_moves: list[tuple[int, int]] = []
 
@@ -92,6 +154,8 @@ class Minimax:
             board[r][c] = self.me
             score = self._search(board, depth=1, alpha=-INF, beta=INF, maximizing=False)
             board[r][c] = EMPTY
+
+            self.candidates.append((move, score))
 
             if score > best_score:
                 best_score = score

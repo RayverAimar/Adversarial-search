@@ -58,14 +58,7 @@ def play_ai(board, ai: Minimax, label: str) -> tuple[int, int]:
     return move
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Tic-tac-toe vs minimax AI (CLI)")
-    parser.add_argument("--size", type=int, default=3, help="Board size N x N (default: 3)")
-    parser.add_argument("--depth", type=int, default=9, help="Max search depth (default: 9)")
-    parser.add_argument("--ai-first", action="store_true", help="AI plays first")
-    parser.add_argument("--self-play", action="store_true", help="AI vs AI")
-    args = parser.parse_args(argv)
-
+def play_one_game(args) -> None:
     size = args.size
     board = [[EMPTY] * size for _ in range(size)]
 
@@ -100,11 +93,33 @@ def main(argv: list[str] | None = None) -> int:
         win = winner_on(board)
         if win:
             print(f"{win} wins!")
-            return 0
+            return
         if is_full(board):
             print("Tied game.")
-            return 0
+            return
         turn += 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Tic-tac-toe vs minimax AI (CLI)")
+    parser.add_argument("--size", type=int, default=3, help="Board size N x N (default: 3)")
+    parser.add_argument("--depth", type=int, default=9, help="Max search depth (default: 9)")
+    parser.add_argument("--ai-first", action="store_true", help="AI plays first")
+    parser.add_argument("--self-play", action="store_true", help="AI vs AI")
+    parser.add_argument("--no-replay", action="store_true", help="Exit after one game (default: ask to replay)")
+    args = parser.parse_args(argv)
+
+    while True:
+        play_one_game(args)
+        if args.no_replay:
+            return 0
+        try:
+            again = input("\nPlay again? [y/N]: ").strip().lower()
+        except EOFError:
+            return 0
+        if again not in {"y", "yes"}:
+            return 0
+        print()
 
 
 if __name__ == "__main__":
