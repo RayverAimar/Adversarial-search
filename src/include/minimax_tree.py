@@ -1,133 +1,163 @@
-import copy
+"""Minimax with alpha-beta pruning for N x N tic-tac-toe.
+
+The previous implementation built an explicit tree of ``Node`` objects, deep-copied
+the board at every child, and recomputed winning combos on every access. This
+version mutates the board in place (move / unmove), uses iterative-style
+recursion, prunes with alpha-beta, and caches the winning combos for a given
+board size.
+"""
+
+from __future__ import annotations
+
 import random
+from functools import lru_cache
 
-avatars = []
+INF = 10**9
+EMPTY = ""
 
-INF = 1e9
 
-class Node(object):
+@lru_cache(maxsize=16)
+def winning_combos(size: int) -> tuple[tuple[tuple[int, int], ...], ...]:
+    """Return all winning lines for an ``size x size`` board.
 
-    def __init__(self, board, max_depth, avatar, move_to_get_here = None, depth = 0):
-        self.board = board
+    Cached per board size — these never change once computed.
+    """
+    rows = [tuple((r, c) for c in range(size)) for r in range(size)]
+    cols = [tuple((r, c) for r in range(size)) for c in range(size)]
+    diag1 = tuple((i, i) for i in range(size))
+    diag2 = tuple((i, size - 1 - i) for i in range(size))
+    return tuple(rows + cols + [diag1, diag2])
+
+
+def winner_on(board: list[list[str]]) -> str | None:
+    """Return the avatar that wins on this board, or ``None``."""
+    size = len(board)
+    for combo in winning_combos(size):
+        first = board[combo[0][0]][combo[0][1]]
+        if first == EMPTY:
+            continue
+        if all(board[r][c] == first for r, c in combo):
+            return first
+    return None
+
+
+def is_full(board: list[list[str]]) -> bool:
+    return all(cell != EMPTY for row in board for cell in row)
+
+
+def empty_cells(board: list[list[str]]) -> list[tuple[int, int]]:
+    return [(r, c) for r, row in enumerate(board) for c, cell in enumerate(row) if cell == EMPTY]
+
+
+def heuristic(board: list[list[str]], me: str, opp: str) -> int:
+    """Count of lines still winnable by ``me`` minus those winnable by ``opp``.
+
+    A line is winnable by a player if it contains only that player's marks
+    and empty cells (no opposing marks).
+    """
+    score = 0
+    for combo in winning_combos(len(board)):
+        cells = [board[r][c] for r, c in combo]
+        if opp not in cells:
+            score += 1
+        if me not in cells:
+            score -= 1
+    return score
+
+
+class Minimax:
+    """Alpha-beta minimax search.
+
+    ``best_move(board)`` returns the move the AI should play next. The AI plays
+    ``self.me``; the opponent plays ``self.opp``. The board is mutated during
+    search and restored before each call returns.
+    """
+
+    def __init__(self, me: str, opp: str, max_depth: int):
+        self.me = me
+        self.opp = opp
         self.max_depth = max_depth
-        self.avatar = avatar
-        self.move_to_get_here = move_to_get_here
-        self.depth = depth
-        self.children = []
-        self.children_with_same_value = []
-        self.value : int
-        self.idx_best_child : int
+        self.nodes_visited = 0
 
-        if not self.is_leaf:
-            self.spread()
-            if (self.depth % 2) == 0:
-                self.value = -INF
-                for i in range(len(self.children)):
-                    if self.children[i].value > self.value:
-                        self.value = self.children[i].value
-                        self.idx_best_child = i
-            else:
-                self.value = INF
-                for i in range(len(self.children)):
-                    if self.children[i].value < self.value:
-                        self.value = self.children[i].value
-                        self.idx_best_child = i
-            if len(self.children) > 1:
-                children_with_same_value = []
-                for i in range(len(self.children)):
-                    if self.children[i].value == self.value:
-                        children_with_same_value.append(i)
-                idx_best_child = children_with_same_value[random.randint(0, len(children_with_same_value) - 1)]
-                self.idx_best_child = idx_best_child
+    def best_move(self, board: list[list[str]]) -> tuple[int, int]:
+        self.nodes_visited = 0
+        best_score = -INF
+        best_moves: list[tuple[int, int]] = []
+
+        moves = empty_cells(board)
+        random.shuffle(moves)  # break ties randomly so AI doesn't always pick top-left
+
+        for move in moves:
+            r, c = move
+            board[r][c] = self.me
+            score = self._search(board, depth=1, alpha=-INF, beta=INF, maximizing=False)
+            board[r][c] = EMPTY
+
+            if score > best_score:
+                best_score = score
+                best_moves = [move]
+            elif score == best_score:
+                best_moves.append(move)
+
+        return random.choice(best_moves)
+
+    def _search(self, board, depth: int, alpha: int, beta: int, maximizing: bool) -> int:
+        self.nodes_visited += 1
+
+        winner = winner_on(board)
+        if winner == self.me:
+            # Prefer faster wins / slower losses by including remaining capacity.
+            return INF - depth
+        if winner == self.opp:
+            return -INF + depth
+        if depth >= self.max_depth or is_full(board):
+            return heuristic(board, self.me, self.opp)
+
+        player = self.me if maximizing else self.opp
+        if maximizing:
+            value = -INF
+            for r, c in empty_cells(board):
+                board[r][c] = player
+                value = max(value, self._search(board, depth + 1, alpha, beta, False))
+                board[r][c] = EMPTY
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    break
+            return value
         else:
-            self.value = self.get_value()
-    
-    @property
-    def _winning_combos(self):
-        rows = [
-            [(row, col) for col in range(len(self.board))]
-            for row in range(len(self.board))
-        ]
-        columns = [list(col) for col in zip(*rows)]
-        first_diagonal = [row[i] for i, row in enumerate(rows)]
-        second_diagonal = [col[j] for j, col in enumerate(reversed(columns))]
-        return rows + columns + [first_diagonal, second_diagonal]
-    
-    @property
-    def moves_played(self):
-        counter = 0
-        for i in range(len(self.board)):
-            for j in range(len(self.board)):
-                if self.board[i][j] != "":
-                    counter += 1
-        return counter
+            value = INF
+            for r, c in empty_cells(board):
+                board[r][c] = player
+                value = min(value, self._search(board, depth + 1, alpha, beta, True))
+                board[r][c] = EMPTY
+                beta = min(beta, value)
+                if alpha >= beta:
+                    break
+            return value
 
-    @property
-    def max_possible_moves(self):
-        return len(self.board) * len(self.board)
 
-    @property
-    def is_winner(self):
-        for combo in self._winning_combos:
-            results = set(self.board[n][m] for n, m in combo)
-            is_win = (len(results) == 1) and ("" not in results)
-            if is_win:
-                return True
+class MinimaxTree:
+    """Backwards-compatible adapter for the GUI code.
 
-    @property
-    def is_leaf(self):
-        if self.moves_played >= self.max_possible_moves or self.depth >= self.max_depth or self.is_winner:
-            return True
-        return False
+    The GUI used to access ``tree.root.children[tree.root.idx_best_child].move_to_get_here``.
+    We expose the same shape using a thin wrapper around :class:`Minimax`, so
+    the GUI code does not have to change.
+    """
 
-    def spread(self):
-        for i in range(len(self.board)):
-            for j in range(len(self.board)):
-                if self.board[i][j] == "":
-                    copy_board = copy.deepcopy(self.board)
-                    copy_board[i][j] = self.avatar
-                    prox_move = (i,j)
-                    child = Node(copy_board, self.max_depth, avatars[(self.depth + 1) % 2], prox_move, self.depth + 1)
-                    self.children.append(child)
-    
-    def _get_possible_combos(self, avatar):
-        combos = 0
-        for combo in self._winning_combos:
-            results = set(self.board[n][m] for n, m in combo)
-            is_win = (len(results) == 1) and ("" in results)
-            is_win2 = (len(results) == 2) and ("" in results) and (avatar in results)
-            if is_win or is_win2:
-                combos+=1
-        return combos
-
-    def combos_substraction(self):
-        computer_avatar = avatars[0]
-        human_avatar = avatars[1]
-        computer_options = self._get_possible_combos(computer_avatar)
-        human_options    = self._get_possible_combos(human_avatar)
-        return computer_options - human_options
-
-    def get_value(self):
-        if self.max_depth <= 3 or not self.is_winner:
-            return self.combos_substraction()
-        score = self.max_possible_moves + (self.max_possible_moves - self.moves_played)
-        if self.avatar == avatars[0]:
-            score *= -1
-        return score
-        
-class MinimaxTree(object):
     def __init__(self, board, avatar, max_depth):
-        self.board = board
-        self.avatar = avatar
-        self.max_depth = max_depth
+        opp = "O" if avatar == "X" else "X"
+        engine = Minimax(me=avatar, opp=opp, max_depth=max_depth)
+        move = engine.best_move(board)
+        self.nodes_visited = engine.nodes_visited
+        self.root = _RootShim(move)
 
-        avatars.clear()
-        avatars.append(self.avatar)
 
-        if self.avatar == "X":
-            avatars.append("O")
-        else:
-            avatars.append("X")
-        
-        self.root = Node(self.board, self.max_depth, self.avatar)
-        print("Best move: ", self.root.children[self.root.idx_best_child].move_to_get_here)
+class _RootShim:
+    def __init__(self, move: tuple[int, int]):
+        self.idx_best_child = 0
+        self.children = [_ChildShim(move)]
+
+
+class _ChildShim:
+    def __init__(self, move: tuple[int, int]):
+        self.move_to_get_here = move

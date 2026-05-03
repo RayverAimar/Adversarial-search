@@ -79,9 +79,6 @@ class TicTacToe(tk.Tk):
                 self.computer_move()
     
     def computer_move(self):
-        grid_frame = tk.Frame(master=self)
-        grid_frame.pack()
-
         current_board = [["" for j in range(self._game.board_size)] for i in range(self._game.board_size)]
         
         for i in self._game._current_moves:
