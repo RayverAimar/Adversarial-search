@@ -37,22 +37,27 @@ A complete 3×3 self-play (both sides at depth 9 → forced draw, the known opti
 
 ## Quickstart
 
+**Requirements:** Python **3.10+** with the standard `tkinter` module (only required for the GUI; the CLI works without it). On macOS, the Python from `python.org` and the system `/usr/bin/python3` both ship Tk; some `homebrew` builds (notably 3.14) do **not** — see [Troubleshooting](#troubleshooting).
+
 ```bash
 git clone https://github.com/RayverAimar/Adversarial-search.git
 cd Adversarial-search
 
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+That's it. Now pick how you want to play:
 
 ### Play in the terminal (no GUI required)
 
 ```bash
-python src/cli.py                    # 3x3, perfect AI, you go first
-python src/cli.py --size 4 --depth 4 # 4x4 board, depth-limited AI
-python src/cli.py --ai-first         # AI moves first
-python src/cli.py --self-play        # AI vs AI
+python src/cli.py                       # 3x3, perfect AI, you go first
+python src/cli.py --size 4 --depth 4    # 4x4 board, depth-limited AI
+python src/cli.py --ai-first            # AI moves first
+python src/cli.py --self-play           # AI vs AI
+python src/cli.py --help                # full CLI flags
 ```
 
 You'll be prompted with `Your move (X) as 'row col'` — answer with two integers, e.g. `1 1` for the center.
@@ -65,6 +70,34 @@ python main.py
 ```
 
 You'll be asked for search depth, who moves first, and the board size, then dropped into the game window.
+
+### Run the tests
+
+```bash
+pytest tests/ -v
+```
+
+### Regenerate the benchmark chart
+
+```bash
+python src/benchmark.py    # writes benchmark.png in the current directory
+```
+
+## Troubleshooting
+
+**`ModuleNotFoundError: No module named '_tkinter'`** when running the GUI.
+Your Python build was compiled without Tk. The CLI still works; for the GUI, pick one of:
+
+```bash
+# macOS — use a Python that bundles Tk
+brew install python-tk@3.12
+/usr/local/bin/python3.12 -m venv .venv     # recreate the venv with this interpreter
+
+# Debian / Ubuntu
+sudo apt-get install python3-tk
+```
+
+Then redo `source .venv/bin/activate && pip install -r requirements.txt`.
 
 ## How the search works
 
@@ -107,10 +140,6 @@ Adversarial-search/
 ```
 
 ## Testing
-
-```bash
-pytest tests/ -v
-```
 
 The suite covers:
 
